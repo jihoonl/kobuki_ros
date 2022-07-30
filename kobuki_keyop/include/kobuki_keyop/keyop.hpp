@@ -54,8 +54,6 @@
 #include <geometry_msgs/msg/twist.hpp>  // for velocity commands
 #include <rclcpp/rclcpp.hpp>
 
-#include <kobuki_ros_interfaces/msg/keyboard_input.hpp> // keycodes from remote teleops.
-#include <kobuki_ros_interfaces/msg/motor_power.hpp>
 
 /*****************************************************************************
  ** Namespaces
@@ -85,9 +83,7 @@ public:
   KeyOp & operator=(const KeyOp & c) = delete;
 
 private:
-  rclcpp::Subscription<kobuki_ros_interfaces::msg::KeyboardInput>::SharedPtr keyinput_subscriber_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr velocity_publisher_;
-  rclcpp::Publisher<kobuki_ros_interfaces::msg::MotorPower>::SharedPtr motor_power_publisher_;
   bool last_zero_vel_sent_;
   bool power_status_;
   // protects against concurrent access to cmd_ (and friends) by the thread
@@ -118,7 +114,6 @@ private:
 
   void keyboardInputLoop();
   void processKeyboardInput(char c);
-  void remoteKeyInputReceived(const std::shared_ptr<kobuki_ros_interfaces::msg::KeyboardInput> key);
   void restoreTerminal();
   bool quit_requested_;
   int key_file_descriptor_;

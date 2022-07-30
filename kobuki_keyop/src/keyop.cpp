@@ -54,9 +54,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
 
-#include <kobuki_ros_interfaces/msg/keyboard_input.hpp>
-#include <kobuki_ros_interfaces/msg/motor_power.hpp>
-
 #include "kobuki_keyop/keyop.hpp"
 
 /*****************************************************************************
@@ -96,19 +93,10 @@ KeyOp::KeyOp(const rclcpp::NodeOptions & options) : rclcpp::Node("kobuki_keyop_n
   RCLCPP_INFO(get_logger(), "KeyOp : using angular vel max  [%f].", angular_vel_max);
 
   /*********************
-   ** Subscribers
-   **********************/
-  keyinput_subscriber_ = this->create_subscription<kobuki_ros_interfaces::msg::KeyboardInput>("teleop", rclcpp::QoS(1), std::bind(&KeyOp::remoteKeyInputReceived, this, std::placeholders::_1));
-
-  /*********************
    ** Publishers
    **********************/
   velocity_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 1);
-  motor_power_publisher_ = this->create_publisher<kobuki_ros_interfaces::msg::MotorPower>("motor_power", rclcpp::QoS(1).transient_local());
 
-  auto power_cmd = std::make_unique<kobuki_ros_interfaces::msg::MotorPower>();
-  power_cmd->state = kobuki_ros_interfaces::msg::MotorPower::ON;
-  motor_power_publisher_->publish(std::move(power_cmd));
   RCLCPP_INFO(get_logger(), "KeyOp: connected.");
   power_status_ = true;
 
@@ -222,14 +210,6 @@ void KeyOp::keyboardInputLoop()
 }
 
 /**
- * @brief Callback function for remote keyboard inputs subscriber.
- */
-void KeyOp::remoteKeyInputReceived(const std::shared_ptr<kobuki_ros_interfaces::msg::KeyboardInput> key)
-{
-  processKeyboardInput(key->pressed_key);
-}
-
-/**
  * @brief Process individual keyboard inputs.
  *
  * @param c keyboard input.
@@ -249,27 +229,27 @@ void KeyOp::processKeyboardInput(char c)
    */
   switch (c)
   {
-    case kobuki_ros_interfaces::msg::KeyboardInput::KEYCODE_LEFT:
+    case 68: // kobuki_ros_interfaces::msg::KeyboardInput::KEYCODE_LEFT:
     {
       incrementAngularVelocity();
       break;
     }
-    case kobuki_ros_interfaces::msg::KeyboardInput::KEYCODE_RIGHT:
+    case 67: // kobuki_ros_interfaces::msg::KeyboardInput::KEYCODE_RIGHT:
     {
       decrementAngularVelocity();
       break;
     }
-    case kobuki_ros_interfaces::msg::KeyboardInput::KEYCODE_UP:
+    case 65: // kobuki_ros_interfaces::msg::KeyboardInput::KEYCODE_UP:
     {
       incrementLinearVelocity();
       break;
     }
-    case kobuki_ros_interfaces::msg::KeyboardInput::KEYCODE_DOWN:
+    case 66: // kobuki_ros_interfaces::msg::KeyboardInput::KEYCODE_DOWN:
     {
       decrementLinearVelocity();
       break;
     }
-    case kobuki_ros_interfaces::msg::KeyboardInput::KEYCODE_SPACE:
+    case 32: // kobuki_ros_interfaces::msg::KeyboardInput::KEYCODE_SPACE:
     {
       resetVelocity();
       break;
@@ -311,9 +291,6 @@ void KeyOp::disable()
   if (power_status_)
   {
     RCLCPP_INFO(get_logger(), "KeyOp: die, die, die (disabling power to the device's motor system).");
-    auto power_cmd = std::make_unique<kobuki_ros_interfaces::msg::MotorPower>();
-    power_cmd->state = kobuki_ros_interfaces::msg::MotorPower::OFF;
-    motor_power_publisher_->publish(std::move(power_cmd));
     power_status_ = false;
   }
   else
@@ -337,9 +314,6 @@ void KeyOp::enable()
   if (!power_status_)
   {
     RCLCPP_INFO(get_logger(), "KeyOp: Enabling power to the device subsystem.");
-    auto power_cmd = std::make_unique<kobuki_ros_interfaces::msg::MotorPower>();
-    power_cmd->state = kobuki_ros_interfaces::msg::MotorPower::ON;
-    motor_power_publisher_->publish(std::move(power_cmd));
     power_status_ = true;
   }
   else
